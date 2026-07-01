@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Google Play Store Analysis — Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--card:#1e2130;--border:#2a2d3e;
+  --accent:#6c63ff;--green:#00d084;--red:#ff4757;--amber:#ffa502;
+  --text:#e8eaf0;--muted:#8b8fa8;--radius:14px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+header{
+  background:linear-gradient(135deg,#1a1d27 0%,#0d1021 100%);
+  border-bottom:1px solid var(--border);padding:20px 36px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.header-left h1{
+  font-size:1.35rem;font-weight:700;
+  background:linear-gradient(90deg,#6c63ff,#ff6584);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.header-left p{font-size:.78rem;color:var(--muted);margin-top:3px}
+.clock-box{background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:10px 18px;text-align:center;min-width:140px}
+.clock-box small{font-size:.68rem;color:var(--muted);display:block}
+#clock{font-size:1.3rem;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-top:2px;font-variant-numeric:tabular-nums}
+
+.status-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 36px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-bar .lbl{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid transparent;white-space:nowrap}
+.badge.live{background:rgba(0,208,132,.12);color:#00d084;border-color:rgba(0,208,132,.3)}
+.badge.locked{background:rgba(255,71,87,.1);color:#ff6b81;border-color:rgba(255,71,87,.25)}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot.g{background:var(--green)}.dot.r{background:var(--red)}
+
+main{max-width:1320px;margin:0 auto;padding:32px 24px}
+.grid-header{margin-bottom:24px}
+.grid-header h2{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding-left:12px;border-left:3px solid var(--accent)}
+
+.tasks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(580px,1fr));gap:22px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .4s ease both}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.10s}
+.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.20s}
+.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.30s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+.card-head{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.card-head-left{flex:1}
+.task-badge{display:inline-block;font-size:.65rem;font-weight:800;background:var(--accent);color:#fff;padding:2px 9px;border-radius:20px;letter-spacing:.5px;margin-bottom:7px}
+.card-title{font-size:.92rem;font-weight:700;line-height:1.35}
+.card-filters{font-size:.7rem;color:var(--muted);margin-top:5px;line-height:1.6}
+.time-badge{font-size:.64rem;font-weight:700;white-space:nowrap;flex-shrink:0;background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:5px 10px}
+
+.card-body{padding:18px 20px}
+.chart-wrap img{width:100%;border-radius:8px;display:block}
+.chart-wrap iframe{width:100%;height:420px;border:none;border-radius:8px;display:block}
+
+.blocked{background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.2);border-radius:10px;padding:36px 20px;text-align:center}
+.blocked .icon{font-size:2.4rem;margin-bottom:10px;display:block}
+.blocked h3{font-size:.95rem;font-weight:700;color:#ff6b81;margin-bottom:6px}
+.blocked p{font-size:.8rem;color:var(--muted);line-height:1.6}
+.blocked .cd{margin-top:12px;font-size:.75rem;font-weight:700;color:var(--amber);background:rgba(255,165,2,.1);display:inline-block;padding:4px 14px;border-radius:20px}
+
+.insight{margin-top:14px;background:rgba(108,99,255,.07);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px}
+.insight h4{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:8px}
+.insight ul{padding-left:16px}
+.insight li{font-size:.76rem;color:var(--muted);margin-bottom:5px;line-height:1.55}
+.insight li strong{color:var(--text)}
+
+footer{text-align:center;padding:28px 24px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted);margin-top:20px}
+footer span{color:var(--accent);font-weight:600}
+
+@media(max-width:660px){
+  header{flex-direction:column;gap:14px;padding:18px 16px}
+  .tasks-grid{grid-template-columns:1fr}
+  main{padding:20px 12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>📊 Google Play Store Analytics</h1>
+    <p>6-Task Data Analysis Project &nbsp;·&nbsp; NullClass Internship Submission</p>
+  </div>
+  <div class="clock-box">
+    <small>Current IST Time</small>
+    <div id="clock">--:--:-- --</div>
+  </div>
+</header>
+
+<div class="status-bar">
+  <span class="lbl">Chart Status:</span>
+  <span id="b1" class="badge">Task 1</span>
+  <span id="b2" class="badge">Task 2</span>
+  <span id="b3" class="badge">Task 3</span>
+  <span id="b4" class="badge">Task 4</span>
+  <span id="b5" class="badge">Task 5</span>
+  <span id="b6" class="badge">Task 6</span>
+</div>
+
+<main>
+  <div class="grid-header"><h2>All 6 Analysis Tasks</h2></div>
+
+  <div class="tasks-grid">
+
+    <!-- TASK 1 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 01</span>
+          <div class="card-title">Avg Rating vs Total Reviews — Top 10 Categories</div>
+          <div class="card-filters">Size ≥ 10MB &nbsp;·&nbsp; Last Updated January &nbsp;·&nbsp; Avg Rating ≥ 4.0</div>
+        </div>
+        <span class="time-badge">🕒 3 PM – 5 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t1-chart" class="chart-wrap"><img src="assets/charts/task1.png" alt="Task 1" loading="lazy"/></div>
+        <div id="t1-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>3:00 PM – 5:00 PM IST</strong></p>
+          <div class="cd" id="cd1"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>January updates correlate with higher ratings</strong> — post-holiday maintenance builds user trust.</li>
+            <li><strong>Apps ≥ 10MB score higher</strong> — users associate file size with feature richness.</li>
+            <li>Categories with massive review counts but moderate ratings signal <strong>highly engaged, vocal user bases</strong> — prime for targeted improvements.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK 2 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 02</span>
+          <div class="card-title">Installs vs Revenue — Free vs Paid (Top 3 Categories)</div>
+          <div class="card-filters">Installs ≥ 10K &nbsp;·&nbsp; Revenue ≥ $10K (Paid) &nbsp;·&nbsp; Android > 4.0 &nbsp;·&nbsp; Size > 15MB &nbsp;·&nbsp; Everyone &nbsp;·&nbsp; Name ≤ 30 chars</div>
+        </div>
+        <span class="time-badge">🕒 1 PM – 2 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t2-chart" class="chart-wrap"><img src="assets/charts/task2.png" alt="Task 2" loading="lazy"/></div>
+        <div id="t2-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>1:00 PM – 2:00 PM IST</strong></p>
+          <div class="cd" id="cd2"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>Free apps attract 800× more installs</strong> — price is the #1 barrier to downloads.</li>
+            <li><strong>FAMILY paid apps average $796,900 revenue</strong> — parents invest heavily in children's content.</li>
+            <li>Freemium (free download + in-app purchases) is the <strong>optimal monetization model</strong> — wins on both reach and revenue.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK 3 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 03</span>
+          <div class="card-title">Global Installs by Category — Interactive Choropleth Map</div>
+          <div class="card-filters">Top 5 categories &nbsp;·&nbsp; Installs > 1M highlighted ★ &nbsp;·&nbsp; Excl. A, C, G, S categories</div>
+        </div>
+        <span class="time-badge">🕒 6 PM – 8 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t3-chart" class="chart-wrap">
+          <iframe src="assets/charts/task3.html" title="Task 3 Choropleth" loading="lazy"></iframe>
+        </div>
+        <div id="t3-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>6:00 PM – 8:00 PM IST</strong></p>
+          <div class="cd" id="cd3"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>PRODUCTIVITY leads with 12.4B installs</strong> — the hidden market leader once GAME is removed from scope.</li>
+            <li><strong>Emerging markets (India, Indonesia) drive volume</strong> — mobile-first populations are the fastest growing user base.</li>
+            <li>All 5 qualifying categories exceed 1M — they represent <strong>genuine mass-market opportunities</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK 4 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 04</span>
+          <div class="card-title">Cumulative Installs Over Time — T & P Categories (Stacked Area)</div>
+          <div class="card-filters">Rating ≥ 4.2 &nbsp;·&nbsp; No digits in name &nbsp;·&nbsp; T/P categories &nbsp;·&nbsp; Reviews > 1K &nbsp;·&nbsp; Size 20–80MB &nbsp;·&nbsp; Legend: FR / ES / JA</div>
+        </div>
+        <span class="time-badge">🕒 4 PM – 6 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t4-chart" class="chart-wrap"><img src="assets/charts/task4.png" alt="Task 4" loading="lazy"/></div>
+        <div id="t4-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>4:00 PM – 6:00 PM IST</strong></p>
+          <div class="cd" id="cd4"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>Photography & Productivity show the steepest climb</strong> — quality apps in these categories compound over time.</li>
+            <li><strong>Dark shaded bands = >25% MoM growth</strong> — these months are the ideal window for new app launches and ad campaigns.</li>
+            <li>Multilingual legend (French/Spanish/Japanese) demonstrates <strong>global analytics readiness</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK 5 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 05</span>
+          <div class="card-title">App Size vs Rating — Bubble Chart (Bubble = Installs)</div>
+          <div class="card-filters">Rating > 3.5 &nbsp;·&nbsp; Reviews > 500 &nbsp;·&nbsp; No "S" in name &nbsp;·&nbsp; Subjectivity > 0.5 &nbsp;·&nbsp; Installs > 50K &nbsp;·&nbsp; GAME = Pink &nbsp;·&nbsp; Beauty/Business/Dating translated</div>
+        </div>
+        <span class="time-badge">🕒 5 PM – 7 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t5-chart" class="chart-wrap"><img src="assets/charts/task5.png" alt="Task 5" loading="lazy"/></div>
+        <div id="t5-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>5:00 PM – 7:00 PM IST</strong></p>
+          <div class="cd" id="cd5"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>GAME (pink) dominates on installs</strong> — 827M total across 22 apps, far ahead of all other categories.</li>
+            <li><strong>Size doesn't hurt ratings</strong> — high sentiment subjectivity (emotional engagement) matters more than file size.</li>
+            <li><strong>BUSINESS apps win with small footprint</strong> — 10MB average, 4.5 rating — lightweight tools drive professional loyalty.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASK 6 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-left">
+          <span class="task-badge">TASK 06</span>
+          <div class="card-title">Install Trends Over Time — E, C & B Categories (Time Series)</div>
+          <div class="card-filters">Categories start E/C/B &nbsp;·&nbsp; No X/Y/Z start &nbsp;·&nbsp; No "S" in name &nbsp;·&nbsp; Reviews > 500 &nbsp;·&nbsp; Shaded = >20% MoM growth</div>
+        </div>
+        <span class="time-badge">🕒 6 PM – 9 PM IST</span>
+      </div>
+      <div class="card-body">
+        <div id="t6-chart" class="chart-wrap"><img src="assets/charts/task6.png" alt="Task 6" loading="lazy"/></div>
+        <div id="t6-blocked" class="blocked" style="display:none">
+          <span class="icon">🔒</span><h3>Access Restricted</h3>
+          <p>Available between <strong>6:00 PM – 9:00 PM IST</strong></p>
+          <div class="cd" id="cd6"></div>
+        </div>
+        <div class="insight">
+          <h4>💡 Business Insights</h4>
+          <ul>
+            <li><strong>COMMUNICATION peaks at 2.4 Billion installs</strong> — network-effect apps grow exponentially once critical mass is reached.</li>
+            <li><strong>Mid-2018 was the Play Store's peak growth window</strong> — all E/C/B categories spiked together as emerging market smartphone penetration hit critical mass.</li>
+            <li><strong>EDUCATION spikes in Jan & June</strong> — academic calendar drives predictable, plannable demand cycles.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>Google Play Store Analytics Dashboard &nbsp;·&nbsp; <span>NullClass Data Analyst Internship</span></p>
+  <p style="margin-top:6px">Python &nbsp;·&nbsp; Pandas &nbsp;·&nbsp; Matplotlib &nbsp;·&nbsp; Plotly &nbsp;·&nbsp; HTML/CSS/JS &nbsp;·&nbsp; Vercel</p>
+  <p style="margin-top:6px;color:#4a4e6a">Charts are time-restricted per internship requirements (IST timezone) — checks run every second in your browser</p>
+</footer>
+
+<script>
+function getIST(){
+  const now=new Date();
+  return new Date(now.getTime()+now.getTimezoneOffset()*60000+5.5*3600000);
+}
+function istHour(){const t=getIST();return t.getHours()+t.getMinutes()/60+t.getSeconds()/3600}
+function minsUntil(h){
+  const t=getIST();
+  const cur=t.getHours()*60+t.getMinutes()+t.getSeconds()/60;
+  const diff=h*60-cur;
+  return diff>0?diff:diff+1440;
+}
+function fmt(m){
+  if(m<1)return 'less than a minute';
+  if(m<60)return Math.ceil(m)+' min';
+  const hh=Math.floor(m/60),mm=Math.ceil(m%60);
+  return mm?hh+'h '+mm+'m':hh+'h';
+}
+
+const TASKS=[
+  {id:'1',start:15,end:17,lbl:'Task 1 · 3–5 PM'},
+  {id:'2',start:13,end:14,lbl:'Task 2 · 1–2 PM'},
+  {id:'3',start:18,end:20,lbl:'Task 3 · 6–8 PM'},
+  {id:'4',start:16,end:18,lbl:'Task 4 · 4–6 PM'},
+  {id:'5',start:17,end:19,lbl:'Task 5 · 5–7 PM'},
+  {id:'6',start:18,end:21,lbl:'Task 6 · 6–9 PM'},
+];
+
+function applyGates(){
+  const h=istHour();
+  TASKS.forEach(t=>{
+    const ok=h>=t.start&&h<t.end;
+    document.getElementById('t'+t.id+'-chart').style.display=ok?'block':'none';
+    document.getElementById('t'+t.id+'-blocked').style.display=ok?'none':'block';
+    const b=document.getElementById('b'+t.id);
+    b.className='badge '+(ok?'live':'locked');
+    b.innerHTML='<span class="dot '+(ok?'g':'r')+'"></span>'+t.lbl+' · '+(ok?'LIVE':'Locked');
+    const cd=document.getElementById('cd'+t.id);
+    if(cd&&!ok)cd.textContent='Opens in ≈ '+fmt(minsUntil(t.start));
+  });
+}
+
+function updateClock(){
+  const t=getIST();
+  const h=t.getHours(),m=t.getMinutes(),s=t.getSeconds();
+  const ap=h>=12?'PM':'AM',h12=h%12||12;
+  document.getElementById('clock').textContent=
+    String(h12).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' '+ap;
+}
+
+function tick(){updateClock();applyGates()}
+tick();setInterval(tick,1000);
+</script>
+</body>
+</html>
